@@ -114,7 +114,7 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
 	    		}
     			nextCharLoc.x = 3;
     			nextCharLoc.y += lineHeight;
-    			if(nextCharLoc.y+lineHeight > sz.y)
+    			if(nextCharLoc.y+lineHeight > sz.y && !scrollLocked)
 		    	{
 		    		scrollBar.max++;
 		    	}

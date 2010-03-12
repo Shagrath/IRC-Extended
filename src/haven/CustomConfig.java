@@ -475,6 +475,12 @@ public class CustomConfig {
     		constraints.gridy = 3;
     		constraints.insets.top = 0;
     		clientSettingsPanel.add(ircOn, constraints);
+    		
+    		ircOn.addActionListener(new ActionListener(){
+    			public void actionPerformed(ActionEvent e){
+    				isIRCOn = ircOn.isSelected();
+    			}
+    		});
 
     		typeStandard.addChangeListener(new ChangeListener(){
     			public void stateChanged(ChangeEvent e)
