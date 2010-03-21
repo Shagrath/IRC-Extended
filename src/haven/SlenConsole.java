@@ -382,7 +382,7 @@ public class SlenConsole extends ChatHW implements IRCConnectionListener
 	}
 	public void onStatus(String msg)
 	{
-		out.append(msg, Color.GRAY);
+		this.out.append(msg, Color.GRAY);
 	}
 	public void onTopic(String chanName, String newTopic)
 	{
