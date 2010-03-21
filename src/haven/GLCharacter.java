@@ -16,7 +16,7 @@ import java.io.IOException;
 
 class GLCharacter {
 	private char letter;
-	public Coord location;
+	public int x;
 	private Coord size;
 	private Color color;
 	private BufferedImage img;
@@ -27,9 +27,9 @@ class GLCharacter {
 	public URI address;
 	private boolean aa;
 	private boolean selected = false;
-	public GLCharacter(char letter, Coord location, Text.Foundry foundry, boolean aa){
+	public GLCharacter(char letter, int x, Text.Foundry foundry, boolean aa){
 		this.letter = letter;
-		this.location = new Coord(location);
+		this.x = x;
 		this.foundry = foundry;
 		color = foundry.defcol;
 		size = foundry.charsize(letter);

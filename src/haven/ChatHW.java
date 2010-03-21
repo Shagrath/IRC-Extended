@@ -30,7 +30,7 @@ import java.awt.Color;
 
 public class ChatHW extends HWindow {
     TextEntry in;
-    ExtTextlog out;
+    Textlog out;
 
     static {
 	Widget.addtype("slenchat", new WidgetFactory() {
@@ -48,7 +48,7 @@ public class ChatHW extends HWindow {
 	super(parent, title, closable);
 	in = new TextEntry(new Coord(0, sz.y - 15), new Coord(sz.x, 15), this, "");
 	in.canactivate = true;
-	out = new ExtTextlog(Coord.z, new Coord(sz.x, sz.y - 15), this);
+	out = new Textlog(Coord.z, new Coord(sz.x, sz.y - 15), this);
 	if(closable) cbtn.raise();
     }
 

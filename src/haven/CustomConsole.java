@@ -2,7 +2,7 @@ package haven;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 class CustomConsole extends Window {
-	public static ExtTextlog out;
+	public static Textlog out;
 	public TextEntry in;
 	public static String log = "IRC-Extended Client Console - Type HELP for a list of commands";
 	public static String newText = "";
@@ -34,7 +34,7 @@ class CustomConsole extends Window {
 	{
 		super(c, sz, parent, title, false);
 		ui.bind(this, CustomConfig.wdgtID++);
-		out = new ExtTextlog(Coord.z, sz.add(0,-20), this);
+		out = new Textlog(Coord.z, sz.add(0,-20), this);
 		in = new TextEntry(new Coord(0, 200), new Coord(sz.x, 20), this, ""){
 			public boolean type(char c, KeyEvent ev)
 			{

@@ -41,7 +41,7 @@ public class Textlog extends Widget {
     boolean sdrag = false;
 
     static {
-	Widget.addtype("elog", new WidgetFactory() {
+	Widget.addtype("log", new WidgetFactory() {
 		public Widget create(Coord c, Widget parent, Object[] args) {
 		    return(new Textlog(c, (Coord)args[0], parent));
 		}

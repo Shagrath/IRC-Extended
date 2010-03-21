@@ -12,25 +12,27 @@ import java.awt.event.KeyEvent;
 import java.awt.datatransfer.*;
 
 public class ExtTextlog extends Widget implements ClipboardOwner{
-
-	private List<GLCharacter> characterMap;
+	
+	static int MAX_LINES = 250;
+	static Text.Foundry fnd = new Text.Foundry(new Font("SansSerif", Font.PLAIN, 9), Color.BLACK);
+	static Color transparent = new Color(Color.WHITE.getRed(), Color.WHITE.getGreen(), Color.WHITE.getBlue(), Color.TRANSLUCENT);
+	static Color alphaBlue = new Color(Color.BLUE.darker().getRed(),Color.BLUE.darker().getGreen(),Color.BLUE.darker().getBlue(),100);
+    static Tex texpap = Resource.loadtex("gfx/hud/texpap");
+	private List<GLLine> lines;
+	private int nextLineLoc = -11;
+	private int lineHeight = 11;
 	private BufferedImage visibleCharacters = new BufferedImage(sz.x,sz.y,BufferedImage.TYPE_INT_ARGB);
-	private BufferedImage drawnCharacters = new BufferedImage(sz.x,sz.y*20,BufferedImage.TYPE_INT_ARGB);
-	private Coord nextCharLoc = new Coord(3,0);
-	private int lineHeight = 0;
+	private BufferedImage drawnCharacters = new BufferedImage(sz.x,lineHeight*MAX_LINES,BufferedImage.TYPE_INT_ARGB);
 	private Scrollbar scrollBar;
 	private boolean scrollLocked;
 	private boolean dragging = false;
 	private boolean ctrlPressed = false;
 	private Rectangle selectedArea = new Rectangle(0,0,0,0);
 	private String selectedText ="";
-	static Color transparent = new Color(Color.WHITE.getRed(), Color.WHITE.getGreen(), Color.WHITE.getBlue(), Color.TRANSLUCENT);
-	static Color alphaBlue = new Color(Color.BLUE.darker().getRed(),Color.BLUE.darker().getGreen(),Color.BLUE.darker().getBlue(),100);
-    static Tex texpap = Resource.loadtex("gfx/hud/texpap");
-    private Text.Foundry fnd = new Text.Foundry(new Font("SansSerif", Font.PLAIN, 9), Color.BLACK);
+	
 
 	static {
-	Widget.addtype("log", new WidgetFactory() {
+	Widget.addtype("extlog", new WidgetFactory() {
 		public Widget create(Coord c, Widget parent, Object[] args) {
 		    return(new ExtTextlog(c, (Coord)args[0], parent));
 		}
@@ -58,29 +60,32 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
 
     public ExtTextlog(Coord c, Coord sz, Widget parent) {
 	super(c, sz, parent);
-	characterMap = new LinkedList<GLCharacter>();
+	lines = new LinkedList<GLLine>();
 	setcanfocus(true);
 	scrollBar = new Scrollbar(Coord.z.add(sz.x,5), sz.y-10, this,0,0);
     }
 
-    public synchronized void append(String line, Color col) {
-    	if(line == null || line == "") line = ".";
-    	if(line.contains("\n"))
+    public synchronized void append(String text, Color col) {
+    	if(text == null || text == "") text = ".";
+    	
+    	//	Splits at obvious line breaks
+    	if(text.contains("\n"))
     	{
-    		String[] lines = line.trim().split("\n");
+    		String[] lines = text.trim().split("\n");
     		for(int i = 0; i < lines.length; i++)
     		{
     			append(lines[i], col);
     		}
     		return;
     	}
-    	GLCharacter tGLChar;
-    	String[] words = line.trim().split(" ");
-    	nextCharLoc.x = 3;
-    	nextCharLoc.y += lineHeight;
+    	
+    	GLLine tGLLine;
+    	String[] words = text.trim().split(" ");
 
     	Graphics g = drawnCharacters.getGraphics();
-    	if(drawnCharacters.getHeight() < nextCharLoc.y + lineHeight)
+    	
+    	//	Max amount of lines reached, trimming the top
+    	if(drawnCharacters.getHeight() < nextLineLoc + lineHeight)
     	{
     		BufferedImage tDrawnCharacters = drawnCharacters;
     		drawnCharacters = new BufferedImage(drawnCharacters.getWidth(),
@@ -88,13 +93,17 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
     											BufferedImage.TYPE_INT_ARGB);
     		g = drawnCharacters.getGraphics();
     		tDrawnCharacters = tDrawnCharacters.getSubimage(0,lineHeight,tDrawnCharacters.getWidth(),tDrawnCharacters.getHeight()-lineHeight);
+    		if(!lines.isEmpty())	lines.remove(0);
     		g.drawImage(tDrawnCharacters,0,0, null);
-    		nextCharLoc.y -= lineHeight;
+    		nextLineLoc -= lineHeight;
     		scrollLocked = true;
     	}
-
+    	
+    	//	Set foundry color
     	fnd.defcol = col;
-    	if(nextCharLoc.y+lineHeight > sz.y && !scrollLocked)
+    	
+    	//	Handle the scrollbar
+    	if(nextLineLoc+lineHeight > sz.y && !scrollLocked)
     	{
     		scrollBar.max++;
     	}
@@ -102,57 +111,32 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
 		{
 		    scrollBar.val = scrollBar.max;
 		}
-
-    	for(int i = 0; i < words.length; i++){
-    		if(nextCharLoc.x + fnd.strsize(words[i]).x >= sz.x-5)
+		
+		//	Splits lines at the width of the widget
+		String line = "";
+		boolean hasExtraLines = false;
+    	for(int i = 0, lineWidth = 0, wordchars=0;
+    	i < words.length;
+    	i++, lineWidth += fnd.strsize(line.trim()).x)
+    	{
+    		if(lineWidth >= sz.x-5)
     		{
-    			tGLChar = new GLCharacter(' ', nextCharLoc, fnd, false);
-    			synchronized(characterMap)
-	    		{
-	    			characterMap.add(tGLChar);
-	    			g.drawImage(tGLChar.img(), tGLChar.location.x,tGLChar.location.y*20, null);
-	    		}
-    			nextCharLoc.x = 3;
-    			nextCharLoc.y += lineHeight;
-    			if(nextCharLoc.y+lineHeight > sz.y && !scrollLocked)
-		    	{
-		    		scrollBar.max++;
-		    	}
-    			if(scrollBar.val+1 == scrollBar.max)
-		    	{
-		    		scrollBar.val = scrollBar.max;
-		    	}
+    			text = text.substring(wordchars-1);
+    			lineWidth = 0;
+    			wordchars = 0;
+    			hasExtraLines = true;
+    			break;
 	    	}
-	    	Pattern pat = Pattern.compile("((http://)(\\S+))|((www.)(\\S+))|(\\S+\\.(co|net|com|org|edu)(\\S+)?+)", Pattern.CASE_INSENSITIVE);
-	    	Matcher match = pat.matcher(words[i]);
-	    	boolean isLink = match.find();
-
-	    	for(int j = 0; j < words[i].length(); j++)
-	    	{
-	    		tGLChar = new GLCharacter(words[i].charAt(j),nextCharLoc ,fnd,false);
-	    		if(isLink) tGLChar.setLink(words[i]);
-	    		synchronized(characterMap)
-	    		{
-	    			characterMap.add(tGLChar);
-	    			g.drawImage(tGLChar.img(), tGLChar.location.x,tGLChar.location.y, null);
-	    		}
-	    		nextCharLoc.x += tGLChar.size().x;
-	    		if(lineHeight == 0){
-	    			lineHeight = tGLChar.size().y;
-	    		}
-	    	}
-	    	if(i != words.length)
-	    	{
-	    		tGLChar = new GLCharacter(' ',nextCharLoc ,fnd,false);
-	    		synchronized(characterMap)
-	    		{
-	    			characterMap.add(tGLChar);
-	    			g.drawImage(tGLChar.img(), tGLChar.location.x,tGLChar.location.y, null);
-	    		}
-	    		nextCharLoc.x += tGLChar.size().x;
-	    	}
+	    	line += words[i] + " ";
+    		wordchars += words[i].length();
     	}
+    	tGLLine = new GLLine(line, col, nextLineLoc);
+    	nextLineLoc += lineHeight;
+    	System.out.println(tGLLine.width);
+    	g.drawImage(tGLLine.img,0,nextLineLoc,null);
     	updateDrawData();
+    	if(hasExtraLines)
+    		append(text, col);
     }
 
     public synchronized void append(String line) {
@@ -263,18 +247,18 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
 
     	selectedArea.width = 2;
     	selectedArea.height = 2;
-    	synchronized(characterMap)
+    	synchronized(lines)
     	{
-	    	for(GLCharacter tGLChar : characterMap)
+	  /*  	for(GLLine tGLLine : characters)
 	    	{
 	    		charArea = new Rectangle(tGLChar.location.x, tGLChar.location.y-(lineHeight*scrollBar.val),
-	    							 tGLChar.size().x, tGLChar.size().y);
+	    							 tGLLine.size().x, tGLChar.size().y);
 	    		if(selectedArea.intersects(charArea) && tGLChar.isLink())
 	    		{
 	    			selectedArea.setBounds(0,0,0,0);
 	    			return tGLChar.activate();
 	    		}
-	    	}
+	    	}*/
     	}
     	selectedArea.setBounds(0,0,0,0);
     	return false;
@@ -285,9 +269,9 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
     	Graphics g = drawnCharacters.getGraphics();
     	selectedText = "";
 
-    	synchronized(characterMap)
+    	synchronized(lines)
     	{
-	    	for(GLCharacter tGLChar : characterMap)
+	/*    	for(GLCharacter tGLChar : characterMap)
 	    	{
 	    		charArea = new Rectangle(tGLChar.location.x, tGLChar.location.y-(lineHeight*scrollBar.val),
 	    							 tGLChar.size().x, tGLChar.size().y);
@@ -302,7 +286,7 @@ public class ExtTextlog extends Widget implements ClipboardOwner{
 	    			g.drawImage(tGLChar.img(), tGLChar.location.x, tGLChar.location.y, null);
 	    			selectedText += tGLChar.letter();
 	    		}
-	    	}
+	    	}*/
     	}
     	updateDrawData();
     }
