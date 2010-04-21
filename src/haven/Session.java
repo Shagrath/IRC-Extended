@@ -32,7 +32,7 @@ import java.io.*;
 import org.relayirc.core.IRCConnection;
 
 public class Session {
-    public static final int PVER = 32;
+    public static final int PVER = 33;
     
     public static final int MSG_SESS = 0;
     public static final int MSG_REL = 1;
@@ -56,7 +56,7 @@ public class Session {
     public static final int OD_FOLLOW = 10;
     public static final int OD_HOMING = 11;
     public static final int OD_OVERLAY = 12;
-    public static final int OD_AUTH = 13;
+    /* public static final int OD_AUTH = 13; -- Removed */
     public static final int OD_HEALTH = 14;
     public static final int OD_BUDDY = 15;
     public static final int OD_END = 255;
@@ -294,11 +294,6 @@ public class Session {
 				res = getres(resid);
 			    }
 			    oc.overlay(id, frame, olid, prs, res, sdt);
-			} else if(type == OD_AUTH) {
-			    int er = msg.uint16();
-			    int ir = msg.uint16();
-			    boolean my = msg.uint8() != 0;
-			    oc.authority(id, frame, er, ir, my);
 			} else if(type == OD_HEALTH) {
 			    int hp = msg.uint8();
 			    oc.health(id, frame, hp);
@@ -306,9 +301,10 @@ public class Session {
 			    String name = msg.string();
 			    if(name.length() > 0) {
 				int group = msg.uint8();
-				oc.buddy(id, frame, name, group);
+				int btype = msg.uint8();
+				oc.buddy(id, frame, name, group, btype);
 			    } else {
-				oc.buddy(id, frame, null, 0);
+				oc.buddy(id, frame, null, 0, 0);
 			    }
 			} else if(type == OD_END) {
 			    break;
