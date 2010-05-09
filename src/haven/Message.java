@@ -161,6 +161,10 @@ public class Message implements java.io.Serializable {
     public boolean eom() {
 	return(off >= blob.length);
     }
+	
+    public int int8() {
+	return(blob[off++]);
+    }
 
     public int uint8() {
 	return(Utils.ub(blob[off++]));
